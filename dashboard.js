@@ -61,6 +61,7 @@ function populateCountrySelector() {
 
 // Fetch ADM data
 async function fetchADMData(country, admLevel) {
+    console.log(`Fetching ADM data for ${country}, level ${admLevel}`);
     try {
         const layerId = admLevel;
         const url = `https://services.arcgis.com/iQ1dY19aHwbSDYIF/ArcGIS/rest/services/World_Bank_Global_Administrative_Divisions_VIEW/FeatureServer/${layerId}/query`;
@@ -69,17 +70,30 @@ async function fetchADMData(country, admLevel) {
             outFields: '*',
             f: 'geojson'
         };
+        console.log('Fetching from URL:', url);
+        console.log('With params:', params);
         const response = await axios.get(url, { params });
+        console.log('Response received:', response.status);
+        console.log('Response data:', response.data);
         return response.data;
     } catch (error) {
         console.error('Error fetching ADM data:', error);
+        if (error.response) {
+            console.error('Error response:', error.response.data);
+        }
     }
 }
 
 // Update map with ADM data
 function updateMap(geojsonData, admLevel) {
+    console.log('Updating map with geojson data:', geojsonData);
     if (currentADMLayer) {
         map.removeLayer(currentADMLayer);
+    }
+
+    if (!geojsonData || !geojsonData.features || geojsonData.features.length === 0) {
+        console.error('Invalid or empty GeoJSON data');
+        return;
     }
 
     currentADMLayer = L.geoJSON(geojsonData, {
@@ -90,7 +104,12 @@ function updateMap(geojsonData, admLevel) {
         }
     }).addTo(map);
 
-    map.fitBounds(currentADMLayer.getBounds());
+    console.log('Layer added to map');
+
+    const bounds = currentADMLayer.getBounds();
+    console.log('Layer bounds:', bounds);
+    map.fitBounds(bounds);
+    console.log('Map fitted to bounds');
 }
 
 // Populate ADM level selector
@@ -194,14 +213,18 @@ function getColor(eaiValue) {
 // Event listeners
 document.getElementById('country-selector').addEventListener('change', async (event) => {
     const country = event.target.value;
+    console.log('Country selected:', country);
     if (country) {
         const countryData = countriesData.find(d => d.ISO_A3 === country);
+        console.log('Country data:', countryData);
         populateADMLevelSelector(countryData.ADM_lvl);
         document.getElementById('hazard-selector').disabled = true;
         document.getElementById('exposure-selector').disabled = true;
 
         // Fetch and plot country boundaries (ADM level 0)
+        console.log('Fetching country boundaries');
         const geojsonData = await fetchADMData(country, 0);
+        console.log('Fetched geojson data:', geojsonData);
         updateMap(geojsonData, 0);
     }
 });
