@@ -296,8 +296,8 @@ function updateMapWithXLSXData(xlsxData, admLevel, expCat) {
 
     currentADMLayer.eachLayer(layer => {
         const properties = layer.feature.properties;
-        const hascCode = properties[`HASC_${admLevel}`];
-        const matchingData = xlsxData.find(row => row[`HASC_${admLevel}`] === hascCode);
+        const NameCode = properties[`NAM_${admLevel}`];
+        const matchingData = xlsxData.find(row => row[`NAM_${admLevel}`] === NameCode);
 
         if (matchingData) {
             const eaiValue = matchingData[`${expCat}_EAI`];
@@ -316,7 +316,7 @@ function updateMapWithXLSXData(xlsxData, admLevel, expCat) {
                 EAI%: ${eaiPercentage.toFixed(2)}%
             `);
         } else {
-            console.warn(`No matching data found for HASC_${admLevel}: ${hascCode}`);
+            console.warn(`No matching data found for NAM_${admLevel}: ${NameCode}`);
         }
     });
 }
