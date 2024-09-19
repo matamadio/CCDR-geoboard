@@ -168,7 +168,11 @@ function populateHazardSelector(hazardList) {
 async function loadXLSXData(isoA3, admLevel, hazardCode, expCat) {
     try {
         const fileName = `data/${isoA3}_ADM${admLevel}_${hazardCode}.xlsx`;
+        console.log(`Attempting to load XLSX file: ${fileName}`);
         const response = await fetch(fileName);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const arrayBuffer = await response.arrayBuffer();
         const data = new Uint8Array(arrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
@@ -184,18 +188,31 @@ async function loadXLSXData(isoA3, admLevel, hazardCode, expCat) {
             case 'AGR':
                 sheetName = 'AGR_EAI_function';
                 break;
+            default:
+                throw new Error(`Unknown exposure category: ${expCat}`);
         }
         
+        console.log(`Reading sheet: ${sheetName}`);
         const sheet = workbook.Sheets[sheetName];
-        return XLSX.utils.sheet_to_json(sheet);
+        if (!sheet) {
+            throw new Error(`Sheet ${sheetName} not found in workbook`);
+        }
+        const jsonData = XLSX.utils.sheet_to_json(sheet);
+        console.log(`Loaded ${jsonData.length} rows of data`);
+        return jsonData;
     } catch (error) {
         console.error('Error loading XLSX data:', error);
+        return null;
     }
 }
 
 // Update map with XLSX data
-function updateMapWithXLSXData(xlsxData, admLevel) {
-    if (!currentADMLayer) return;
+function updateMapWithXLSXData(xlsxData, admLevel, expCat) {
+    console.log(`Updating map with XLSX data for ADM${admLevel}, ${expCat}`);
+    if (!currentADMLayer) {
+        console.error('No current ADM layer to update');
+        return;
+    }
 
     currentADMLayer.eachLayer(layer => {
         const properties = layer.feature.properties;
@@ -218,6 +235,8 @@ function updateMapWithXLSXData(xlsxData, admLevel) {
                 EAI: ${eaiValue.toFixed(2)}<br>
                 EAI%: ${eaiPercentage.toFixed(2)}%
             `);
+        } else {
+            console.warn(`No matching data found for HASC_${admLevel}: ${hascCode}`);
         }
     });
 }
@@ -285,8 +304,14 @@ document.getElementById('exposure-selector').addEventListener('change', async (e
 
     if (country && admLevel && hazard && expCat) {
         try {
+            console.log(`Loading XLSX data for ${country}, ADM${admLevel}, ${hazard}, ${expCat}`);
             const xlsxData = await loadXLSXData(country, admLevel, hazard, expCat);
-            updateMapWithXLSXData(xlsxData, admLevel, expCat);
+            console.log('XLSX data loaded:', xlsxData);
+            if (xlsxData) {
+                updateMapWithXLSXData(xlsxData, admLevel, expCat);
+            } else {
+                console.error('No XLSX data loaded');
+            }
         } catch (error) {
             console.error('Error loading or updating data:', error);
         }
