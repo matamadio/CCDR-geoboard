@@ -167,7 +167,7 @@ function populateHazardSelector(hazardList) {
 // Load XLSX data
 async function loadXLSXData(isoA3, admLevel, hazardCode, expCat) {
     try {
-        const fileName = `data/${isoA3}_${admLevel}_${hazardCode}.xlsx`;
+        const fileName = `data/${isoA3}_ADM${admLevel}_${hazardCode}.xlsx`;
         const response = await fetch(fileName);
         const arrayBuffer = await response.arrayBuffer();
         const data = new Uint8Array(arrayBuffer);
