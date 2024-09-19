@@ -212,7 +212,7 @@ function getJenksBreaks(data, numClasses) {
 }
 
 // Create a legend
-function createLegend(colorScale, breaks) {
+function createLegend(colorScale, breaks, expCat) {
     const legend = L.control({position: 'bottomright'});
     legend.onAdd = function (map) {
         const div = L.DomUtil.create('div', 'info legend');
@@ -222,6 +222,24 @@ function createLegend(colorScale, breaks) {
         div.style.lineHeight = '18px';
         div.style.margin = '0 0 5px 0';
         div.style.color = '#555';
+
+        // Add title based on exposure category
+        let title;
+        switch(expCat) {
+            case 'POP':
+                title = 'Population EAI [#]';
+                break;
+            case 'BU':
+                title = 'Built-up EAI [Ha]';
+                break;
+            case 'AGR':
+                title = 'Cropland EAI [Ha]';
+                break;
+            default:
+                title = 'EAI';
+        }
+
+        div.innerHTML = '<h4 style="margin:0 0 10px 0;">' + title + '</h4>';
 
         // Reverse the breaks array
         breaks.reverse();
@@ -265,7 +283,7 @@ function updateMapWithXLSXData(xlsxData, admLevel, expCat) {
     if (map.legend) {
         map.removeControl(map.legend);
     }
-    map.legend = createLegend(colorScale, breaks);
+    map.legend = createLegend(colorScale, breaks, expCat);
     map.legend.addTo(map);
 
     currentADMLayer.eachLayer(layer => {
