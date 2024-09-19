@@ -231,7 +231,6 @@ function createLegend(colorScale, breaks, expCat) {
         div.style.margin = '0 0 5px 0';
         div.style.color = '#555';
 
-        // Add title based on exposure category
         let title;
         switch(expCat) {
             case 'POP':
@@ -249,16 +248,17 @@ function createLegend(colorScale, breaks, expCat) {
 
         div.innerHTML = '<h4 style="margin:0 0 10px 0;">' + title + '</h4>';
 
-        // Reverse the breaks array
         breaks.reverse();
 
         for (let i = 0; i < breaks.length; i++) {
             const color = colorScale(breaks[i]).hex();
-            const nextBreak = breaks[i + 1] || 0; // Use 0 as the lower bound
+            const nextBreak = breaks[i + 1] || 0;
             div.innerHTML +=
                 '<i style="background:' + color + '; width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.7;"></i> ' +
-                (nextBreak !== 0 ? nextBreak.toFixed(2) + '&ndash;' : '<') + breaks[i].toFixed(2) + '<br>';
+                (i === breaks.length - 1 ? '0 &ndash; ' : '') +
+                nextBreak.toFixed(2) + (i === 0 ? '+' : '') + '<br>';
         }
+        div.innerHTML += '<i style="background: transparent; width: 18px; height: 18px; float: left; margin-right: 8px; border: 1px solid #555;"></i> No data';
         return div;
     };
     return legend;
@@ -266,7 +266,7 @@ function createLegend(colorScale, breaks, expCat) {
 
 // GetColorScale function
 function getColorScale(data, expCat) {
-    const values = data.map(d => d[`${expCat}_EAI`]);
+    const values = data.map(d => d[`${expCat}_EAI`]).filter(v => v > 0);
     const breaks = getJenksBreaks(values, 6);
     const colorScale = chroma.scale(['#FFEDA0', '#FED976', '#FEB24C', '#FD8D3C', '#FC4E2A', '#E31A1C', '#BD0026']).classes(breaks);
     return colorScale;
@@ -286,7 +286,7 @@ function updateMapWithXLSXData(xlsxData, admLevel, expCat) {
     }
 
     const colorScale = getColorScale(xlsxData, expCat);
-    const breaks = getJenksBreaks(xlsxData.map(d => d[`${expCat}_EAI`]), 6);
+    const breaks = getJenksBreaks(xlsxData.map(d => d[`${expCat}_EAI`]).filter(v => v > 0), 6);
 
     if (map.legend) {
         map.removeControl(map.legend);
@@ -304,19 +304,30 @@ function updateMapWithXLSXData(xlsxData, admLevel, expCat) {
             const eaiPercentage = matchingData[`${expCat}_EAI%`];
 
             // Update layer style based on EAI value
-            layer.setStyle({
-                fillColor: getColor(eaiValue, colorScale),
-                fillOpacity: 0.7
-            });
+            if (eaiValue > 0) {
+                layer.setStyle({
+                    fillColor: getColor(eaiValue, colorScale),
+                    fillOpacity: 0.7
+                });
+            } else {
+                layer.setStyle({
+                    fillColor: 'transparent',
+                    fillOpacity: 0
+                });
+            }
 
             // Add popup with EAI information
             layer.bindPopup(`
                 <strong>${properties[`NAM_${admLevel}`]}</strong><br>
-                EAI: ${eaiValue.toFixed(2)}<br>
-                EAI%: ${eaiPercentage.toFixed(2)}%
+                EAI: ${eaiValue.toFixed(4)}<br>
+                EAI%: ${eaiPercentage.toFixed(4)}%
             `);
         } else {
             console.warn(`No matching data found for NAM_${admLevel}: ${NameCode}`);
+            layer.setStyle({
+                fillColor: 'transparent',
+                fillOpacity: 0
+            });
         }
     });
 }
