@@ -336,7 +336,7 @@ function updateMapWithXLSXData(xlsxData, admLevel, expCat) {
             // Add popup with EAI information
             layer.bindPopup(`
                 <strong>${properties[`NAM_${admLevel}`]}</strong><br>
-                EAI: ${eaiValue.toFixed(6)}<br>
+                EAI: ${eaiValue.toFixed(4)}<br>
                 EAI%: ${eaiPercentage.toFixed(4)}%
             `);
         } else {
