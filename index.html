@@ -21,6 +21,7 @@
         #map-container {
             width: 80%;
             height: 100%;
+            position: relative;
         }
         #sidebar {
             width: 20%;
@@ -39,12 +40,30 @@
         h1 {
             margin-top: 0;
         }
+        select {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        #basemap-select {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div id="map-container">
             <div id="map"></div>
+            <select id="basemap-select">
+                <option value="osm">OpenStreetMap</option>
+                <option value="satellite">Satellite</option>
+                <option value="topo">Topographic</option>
+                <option value="dark">Dark</option>
+            </select>
         </div>
         <div id="sidebar">
             <h1>Geo-Dashboard</h1>
@@ -80,11 +99,26 @@
             ]
         };
 
+        // Basemap definitions
+        const basemaps = {
+            osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }),
+            satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+            }),
+            topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap (CC-BY-SA)'
+            }),
+            dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+            })
+        };
+
         // Initialize map
-        const map = L.map('map').setView([53.5, 0], 6);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+        const map = L.map('map', {
+            layers: [basemaps.osm]
+        }).setView([53.5, 0], 6);
 
         let geojsonLayer;
         function updateMap(property) {
@@ -156,6 +190,13 @@
 
         document.getElementById('layer-select').addEventListener('change', updateDashboard);
         updateDashboard();
+
+        // Basemap selection
+        document.getElementById('basemap-select').addEventListener('change', (e) => {
+            const selectedBasemap = e.target.value;
+            Object.values(basemaps).forEach(layer => map.removeLayer(layer));
+            basemaps[selectedBasemap].addTo(map);
+        });
 
         // Resize handler
         window.addEventListener('resize', () => {
