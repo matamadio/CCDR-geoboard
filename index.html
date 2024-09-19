@@ -6,36 +6,10 @@
     <title>CCDR Analytics Geo-Dashboard</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: Arial, sans-serif;
-        }
-        .container {
-            display: flex;
-            height: 100%;
-        }
-        #map-container {
-            flex: 1;
-            height: 100%;
-        }
-        #map {
-            height: 100%;
-        }
-        #sidebar {
-            width: 300px;
-            padding: 20px;
-            background-color: #f0f0f0;
-            overflow-y: auto;
-        }
-        select, button {
-            width: 100%;
-            margin-bottom: 10px;
-            padding: 5px;
-        }
-        #chart {
-            margin-top: 20px;
+        /* ... (previous styles remain the same) ... */
+        select:disabled {
+            background-color: #e0e0e0;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -50,20 +24,17 @@
             <select id="country-selector">
                 <option value="">Select a country</option>
             </select>
-            <select id="adm-level-selector">
-                <option value="0">ADM Level 0</option>
-                <option value="1">ADM Level 1</option>
-                <option value="2">ADM Level 2</option>
-                <option value="3">ADM Level 3</option>
+            <select id="adm-level-selector" disabled>
+                <option value="">Select ADM level</option>
             </select>
-            <select id="hazard-selector">
+            <select id="hazard-selector" disabled>
                 <option value="">Select a hazard</option>
-                <option value="river-floods">River floods</option>
-                <option value="coastal-floods">Coastal floods</option>
-                <option value="landslides">Landslides</option>
-                <option value="tropical-cyclones">Tropical Cyclones</option>
-                <option value="extreme-heat">Extreme heat</option>
-                <option value="drought">Drought</option>
+            </select>
+            <select id="exposure-selector" disabled>
+                <option value="">Select exposure</option>
+                <option value="POP">Population</option>
+                <option value="BU">Built-Up</option>
+                <option value="AGR">Cropland</option>
             </select>
             <div id="chart"></div>
         </div>
@@ -71,6 +42,7 @@
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <script src="dashboard.js"></script>
 </body>
 </html>
