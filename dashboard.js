@@ -29,7 +29,6 @@ L.control.layers(baseMaps).addTo(map);
 // Global variables
 let currentCountryLayer = null;
 let currentADMLayer = null;
-let countriesData = null;
 
 // Hazard code to name mapping
 const hazardMapping = {
@@ -41,22 +40,18 @@ const hazardMapping = {
     'DR': 'Drought'
 };
 
-// Fetch countries data
-async function fetchCountries() {
-    try {
-        const response = await axios.get('data/countries.csv');
-        const csvData = response.data;
-        countriesData = d3.csvParse(csvData, d3.autoType);
-        populateCountrySelector(countriesData);
-    } catch (error) {
-        console.error('Error fetching countries:', error);
-    }
-}
+// Hardcoded country data
+const countriesData = [
+    { NAM_0: "Jamaica", ISO_A3: "JAM", ADM_lvl: 2, HZD_list: "FL;CF" },
+    { NAM_0: "Cambodia", ISO_A3: "KHM", ADM_lvl: 3, HZD_list: "FL;CF;LS;TC;HS" },
+    { NAM_0: "Lao PDR", ISO_A3: "LAO", ADM_lvl: 2, HZD_list: "FL" },
+    { NAM_0: "Tunisia", ISO_A3: "TUN", ADM_lvl: 3, HZD_list: "FL" }
+];
 
 // Populate country selector
-function populateCountrySelector(countries) {
+function populateCountrySelector() {
     const selector = document.getElementById('country-selector');
-    countries.sort((a, b) => a.NAM_0.localeCompare(b.NAM_0)).forEach(country => {
+    countriesData.sort((a, b) => a.NAM_0.localeCompare(b.NAM_0)).forEach(country => {
         const option = document.createElement('option');
         option.value = country.ISO_A3;
         option.textContent = country.NAM_0;
@@ -238,4 +233,4 @@ document.getElementById('exposure-selector').addEventListener('change', async (e
 });
 
 // Initialize the dashboard
-fetchCountries();
+populateCountrySelector();
