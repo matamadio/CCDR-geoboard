@@ -42,10 +42,10 @@ const hazardMapping = {
 
 // Hardcoded country data
 const countriesData = [
-    { NAM_0: "Jamaica", ISO_A3: "JAM", ADM_lvl: 2, HZD_list: "FL;CF" },
-    { NAM_0: "Cambodia", ISO_A3: "KHM", ADM_lvl: 3, HZD_list: "FL;CF;LS;TC;HS" },
+    { NAM_0: "Jamaica", ISO_A3: "JAM", ADM_lvl: 1, HZD_list: "FL;CF" },
+    { NAM_0: "Cambodia", ISO_A3: "KHM", ADM_lvl: 2, HZD_list: "FL;CF;LS;TC;HS" },
     { NAM_0: "Lao PDR", ISO_A3: "LAO", ADM_lvl: 2, HZD_list: "FL" },
-    { NAM_0: "Tunisia", ISO_A3: "TUN", ADM_lvl: 3, HZD_list: "FL" }
+    { NAM_0: "Tunisia", ISO_A3: "TUN", ADM_lvl: 2, HZD_list: "FL" }
 ];
 
 // Populate country selector
@@ -206,6 +206,51 @@ async function loadXLSXData(isoA3, admLevel, hazardCode, expCat) {
     }
 }
 
+// Calculate Jenks breaks
+function getJenksBreaks(data, numClasses) {
+    return ss.jenks(data, numClasses);
+}
+
+// Create a legend
+function createLegend(colorScale, breaks) {
+    const legend = L.control({position: 'bottomright'});
+    legend.onAdd = function (map) {
+        const div = L.DomUtil.create('div', 'info legend');
+        div.style.backgroundColor = 'white';
+        div.style.padding = '6px 8px';
+        div.style.font = '14px Arial, Helvetica, sans-serif';
+        div.style.lineHeight = '18px';
+        div.style.margin = '0 0 5px 0';
+        div.style.color = '#555';
+
+        // Reverse the breaks array
+        breaks.reverse();
+
+        for (let i = 0; i < breaks.length; i++) {
+            const color = colorScale(breaks[i]).hex();
+            const nextBreak = breaks[i + 1] || 0; // Use 0 as the lower bound
+            div.innerHTML +=
+                '<i style="background:' + color + '; width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.7;"></i> ' +
+                (nextBreak !== 0 ? nextBreak.toFixed(2) + '&ndash;' : '<') + breaks[i].toFixed(2) + '<br>';
+        }
+        return div;
+    };
+    return legend;
+}
+
+// GetColorScale function
+function getColorScale(data, expCat) {
+    const values = data.map(d => d[`${expCat}_EAI`]);
+    const breaks = getJenksBreaks(values, 6);
+    const colorScale = chroma.scale(['#FFEDA0', '#FED976', '#FEB24C', '#FD8D3C', '#FC4E2A', '#E31A1C', '#BD0026']).classes(breaks);
+    return colorScale;
+}
+
+// Update the getColor function
+function getColor(value, colorScale) {
+    return colorScale(value).hex();
+}
+
 // Update map with XLSX data
 function updateMapWithXLSXData(xlsxData, admLevel, expCat) {
     console.log(`Updating map with XLSX data for ADM${admLevel}, ${expCat}`);
@@ -213,6 +258,15 @@ function updateMapWithXLSXData(xlsxData, admLevel, expCat) {
         console.error('No current ADM layer to update');
         return;
     }
+
+    const colorScale = getColorScale(xlsxData, expCat);
+    const breaks = getJenksBreaks(xlsxData.map(d => d[`${expCat}_EAI`]), 6);
+
+    if (map.legend) {
+        map.removeControl(map.legend);
+    }
+    map.legend = createLegend(colorScale, breaks);
+    map.legend.addTo(map);
 
     currentADMLayer.eachLayer(layer => {
         const properties = layer.feature.properties;
@@ -225,7 +279,7 @@ function updateMapWithXLSXData(xlsxData, admLevel, expCat) {
 
             // Update layer style based on EAI value
             layer.setStyle({
-                fillColor: getColor(eaiValue),
+                fillColor: getColor(eaiValue, colorScale),
                 fillOpacity: 0.7
             });
 
@@ -239,20 +293,6 @@ function updateMapWithXLSXData(xlsxData, admLevel, expCat) {
             console.warn(`No matching data found for HASC_${admLevel}: ${hascCode}`);
         }
     });
-}
-
-// Color scale function for EAI values
-function getColor(eaiValue) {
-    // Implement your color scale logic here
-    // This is a simple example, you may want to use a more sophisticated scale
-    return eaiValue > 1000 ? '#800026' :
-           eaiValue > 500  ? '#BD0026' :
-           eaiValue > 200  ? '#E31A1C' :
-           eaiValue > 100  ? '#FC4E2A' :
-           eaiValue > 50   ? '#FD8D3C' :
-           eaiValue > 20   ? '#FEB24C' :
-           eaiValue > 10   ? '#FED976' :
-                             '#FFEDA0';
 }
 
 // Event listeners
