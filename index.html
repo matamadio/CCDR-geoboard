@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CCDR analytics - Geo-Dashboard</title>
+    <title>CCDR Analytics Geo-Dashboard</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         body, html {
             margin: 0;
@@ -16,46 +14,28 @@
         }
         .container {
             display: flex;
-            height: 100vh;
+            height: 100%;
         }
         #map-container {
-            width: 80%;
+            flex: 1;
             height: 100%;
-            position: relative;
+        }
+        #map {
+            height: 100%;
         }
         #sidebar {
-            width: 20%;
-            height: 100%;
+            width: 300px;
             padding: 20px;
-            box-sizing: border-box;
+            background-color: #f0f0f0;
             overflow-y: auto;
         }
-        #map { 
-            height: 100%; 
-        }
-        #chart { 
-            height: 200px;
-            margin-top: 20px;
-        }
-        h1 {
-            margin-top: 0;
-        }
-        select {
+        select, button {
             width: 100%;
             margin-bottom: 10px;
-        }
-        #basemap-select {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            z-index: 1000;
-            background: white;
             padding: 5px;
-            max-width: 300px;
-            width: 100%;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.65);
-            border-radius: 4px;
-            font-size: 14px;
+        }
+        #chart {
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -63,152 +43,34 @@
     <div class="container">
         <div id="map-container">
             <div id="map"></div>
-            <select id="basemap-select">
-                <option value="osm">OpenStreetMap</option>
-                <option value="satellite">Satellite</option>
-                <option value="topo">Topographic</option>
-                <option value="dark">Dark</option>
-            </select>
         </div>
         <div id="sidebar">
             <h1>CCDR Analytics</h1>
             <h2>Geo-Dashboard</h2>
-            <select id="layer-select">
-                <option value="population">Population</option>
-                <option value="area">Area</option>
+            <select id="country-selector">
+                <option value="">Select a country</option>
+            </select>
+            <select id="adm-level-selector">
+                <option value="0">ADM Level 0</option>
+                <option value="1">ADM Level 1</option>
+                <option value="2">ADM Level 2</option>
+                <option value="3">ADM Level 3</option>
+            </select>
+            <select id="hazard-selector">
+                <option value="">Select a hazard</option>
+                <option value="river-floods">River floods</option>
+                <option value="coastal-floods">Coastal floods</option>
+                <option value="landslides">Landslides</option>
+                <option value="tropical-cyclones">Tropical Cyclones</option>
+                <option value="extreme-heat">Extreme heat</option>
+                <option value="drought">Drought</option>
             </select>
             <div id="chart"></div>
         </div>
     </div>
-
-    <script>
-        // Sample GeoJSON data - replace with your own
-        const geojsonData = {
-            "type": "FeatureCollection",
-            "features": [
-                {
-                    "type": "Feature",
-                    "properties": {"name": "Area 1", "population": 100, "area": 50},
-                    "geometry": {
-                        "type": "Polygon",
-                        "coordinates": [[[-5, 52], [-5, 55], [0, 55], [0, 52], [-5, 52]]]
-                    }
-                },
-                {
-                    "type": "Feature",
-                    "properties": {"name": "Area 2", "population": 200, "area": 75},
-                    "geometry": {
-                        "type": "Polygon",
-                        "coordinates": [[[0, 52], [0, 55], [5, 55], [5, 52], [0, 52]]]
-                    }
-                }
-            ]
-        };
-
-        // Basemap definitions
-        const basemaps = {
-            osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
-            }),
-            satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-            }),
-            topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-                attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap (CC-BY-SA)'
-            }),
-            dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
-            })
-        };
-
-        // Initialize map
-        const map = L.map('map', {
-            layers: [basemaps.osm]
-        }).setView([53.5, 0], 6);
-
-        let geojsonLayer;
-        function updateMap(property) {
-            if (geojsonLayer) {
-                map.removeLayer(geojsonLayer);
-            }
-            geojsonLayer = L.geoJSON(geojsonData, {
-                style: (feature) => {
-                    return {
-                        fillColor: d3.interpolateBlues(feature.properties[property] / 200),
-                        weight: 1,
-                        opacity: 1,
-                        color: 'white',
-                        fillOpacity: 0.7
-                    };
-                },
-                onEachFeature: (feature, layer) => {
-                    layer.bindPopup(`${feature.properties.name}<br>${property}: ${feature.properties[property]}`);
-                }
-            }).addTo(map);
-        }
-
-        function updateChart(property) {
-            const data = geojsonData.features.map(f => ({
-                name: f.properties.name,
-                value: f.properties[property]
-            }));
-
-            d3.select("#chart").selectAll("*").remove();
-            const margin = {top: 20, right: 20, bottom: 30, left: 40};
-            const width = document.getElementById('chart').offsetWidth - margin.left - margin.right;
-            const height = 200 - margin.top - margin.bottom;
-
-            const svg = d3.select("#chart").append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-                .append("g")
-                .attr("transform", `translate(${margin.left},${margin.top})`);
-
-            const x = d3.scaleBand().range([0, width]).padding(0.1);
-            const y = d3.scaleLinear().range([height, 0]);
-
-            x.domain(data.map(d => d.name));
-            y.domain([0, d3.max(data, d => d.value)]);
-
-            svg.selectAll(".bar")
-                .data(data)
-                .enter().append("rect")
-                .attr("class", "bar")
-                .attr("x", d => x(d.name))
-                .attr("width", x.bandwidth())
-                .attr("y", d => y(d.value))
-                .attr("height", d => height - y(d.value))
-                .attr("fill", "steelblue");
-
-            svg.append("g")
-                .attr("transform", `translate(0,${height})`)
-                .call(d3.axisBottom(x));
-
-            svg.append("g")
-                .call(d3.axisLeft(y));
-        }
-
-        function updateDashboard() {
-            const property = document.getElementById('layer-select').value;
-            updateMap(property);
-            updateChart(property);
-        }
-
-        document.getElementById('layer-select').addEventListener('change', updateDashboard);
-        updateDashboard();
-
-        // Basemap selection
-        document.getElementById('basemap-select').addEventListener('change', (e) => {
-            const selectedBasemap = e.target.value;
-            Object.values(basemaps).forEach(layer => map.removeLayer(layer));
-            basemaps[selectedBasemap].addTo(map);
-        });
-
-        // Resize handler
-        window.addEventListener('resize', () => {
-            map.invalidateSize();
-            updateDashboard();
-        });
-    </script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
+    <script src="dashboard.js"></script>
 </body>
 </html>
