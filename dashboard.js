@@ -59,28 +59,54 @@ function populateCountrySelector() {
     });
 }
 
+// Function to get the correct layer ID based on administrative level
+async function getLayerIdForAdm(admLevel) {
+    const layersUrl = `https://services.arcgis.com/iQ1dY19aHwbSDYIF/ArcGIS/rest/services/World_Bank_Global_Administrative_Divisions_VIEW/FeatureServer/layers`;
+    const targetLayerName = `WB_GAD_ADM${admLevel}`;
+
+    try {
+        const response = await axios.get(layersUrl, { params: { f: 'json' } });
+        const layersInfo = response.data.layers;
+        
+        for (const layer of layersInfo) {
+            if (layer.name === targetLayerName) {
+                return layer.id;
+            }
+        }
+        console.error(`Layer matching ${targetLayerName} not found.`);
+        return null;
+    } catch (error) {
+        console.error('Error fetching layers:', error);
+        return null;
+    }
+}
+
 // Fetch ADM data
 async function fetchADMData(country, admLevel) {
     console.log(`Fetching ADM data for ${country}, level ${admLevel}`);
+    const layerId = await getLayerIdForAdm(admLevel);
+    
+    if (!layerId) {
+        console.error("Invalid administrative level or layer mapping not found.");
+        return null;
+    }
+
+    const queryUrl = `https://services.arcgis.com/iQ1dY19aHwbSDYIF/ArcGIS/rest/services/World_Bank_Global_Administrative_Divisions_VIEW/FeatureServer/${layerId}/query`;
+    const params = {
+        where: `ISO_A3 = '${country}'`,
+        outFields: '*',
+        f: 'geojson'
+    };
+
     try {
-        const layerId = admLevel;
-        const url = `https://services.arcgis.com/iQ1dY19aHwbSDYIF/ArcGIS/rest/services/World_Bank_Global_Administrative_Divisions_VIEW/FeatureServer/${layerId}/query`;
-        const params = {
-            where: `ISO_A3 = '${country}'`,
-            outFields: '*',
-            f: 'geojson'
-        };
-        console.log('Fetching from URL:', url);
+        console.log('Fetching from URL:', queryUrl);
         console.log('With params:', params);
-        const response = await axios.get(url, { params });
+        const response = await axios.get(queryUrl, { params });
         console.log('Response received:', response.status);
-        console.log('Response data:', response.data);
         return response.data;
     } catch (error) {
         console.error('Error fetching ADM data:', error);
-        if (error.response) {
-            console.error('Error response:', error.response.data);
-        }
+        return null;
     }
 }
 
@@ -225,7 +251,11 @@ document.getElementById('country-selector').addEventListener('change', async (ev
         console.log('Fetching country boundaries');
         const geojsonData = await fetchADMData(country, 0);
         console.log('Fetched geojson data:', geojsonData);
-        updateMap(geojsonData, 0);
+        if (geojsonData) {
+            updateMap(geojsonData, 0);
+        } else {
+            console.error('Failed to fetch country boundaries');
+        }
     }
 });
 
