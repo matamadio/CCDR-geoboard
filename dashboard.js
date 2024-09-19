@@ -199,6 +199,10 @@ document.getElementById('country-selector').addEventListener('change', async (ev
         populateADMLevelSelector(countryData.ADM_lvl);
         document.getElementById('hazard-selector').disabled = true;
         document.getElementById('exposure-selector').disabled = true;
+
+        // Fetch and plot country boundaries (ADM level 0)
+        const geojsonData = await fetchADMData(country, 0);
+        updateMap(geojsonData, 0);
     }
 });
 
@@ -227,8 +231,12 @@ document.getElementById('exposure-selector').addEventListener('change', async (e
     const hazard = document.getElementById('hazard-selector').value;
 
     if (country && admLevel && hazard && expCat) {
-        const xlsxData = await loadXLSXData(country, admLevel, hazard, expCat);
-        updateMapWithXLSXData(xlsxData, admLevel);
+        try {
+            const xlsxData = await loadXLSXData(country, admLevel, hazard, expCat);
+            updateMapWithXLSXData(xlsxData, admLevel, expCat);
+        } catch (error) {
+            console.error('Error loading or updating data:', error);
+        }
     }
 });
 
