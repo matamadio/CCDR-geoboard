@@ -248,26 +248,43 @@ function createLegend(colorScale, breaks, expCat) {
 
         div.innerHTML = '<h4 style="margin:0 0 10px 0;">' + title + '</h4>';
 
-        breaks.reverse();
+        if (breaks && breaks.length > 0) {
+            breaks.reverse();
 
-        for (let i = 0; i < breaks.length; i++) {
-            const color = colorScale(breaks[i]).hex();
-            const nextBreak = breaks[i + 1] || 0;
-            div.innerHTML +=
-                '<i style="background:' + color + '; width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.7;"></i> ' +
-                (i === breaks.length - 1 ? '0 &ndash; ' : '') +
-                nextBreak.toFixed(2) + (i === 0 ? '+' : '') + '<br>';
+            for (let i = 0; i < breaks.length; i++) {
+                const color = colorScale(breaks[i]).hex();
+                const nextBreak = breaks[i + 1] || 0;
+                div.innerHTML +=
+                    '<i style="background:' + color + '; width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.7;"></i> ' +
+                    (i === breaks.length - 1 ? '0 &ndash; ' : '') +
+                    nextBreak.toFixed(4) + (i === 0 ? '+' : '') + '<br>';
+            }
+        } else {
+            div.innerHTML += '<i style="background: #FFFFFF; width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.7;"></i> No data<br>';
         }
-        div.innerHTML += '<i style="background: transparent; width: 18px; height: 18px; float: left; margin-right: 8px; border: 1px solid #555;"></i> No data';
+        
         return div;
     };
     return legend;
 }
 
+// Jenks function
+function getJenksBreaks(data, numClasses) {
+    if (data.length < numClasses) {
+        // Not enough data for the requested number of classes
+        return data.sort((a, b) => a - b);
+    }
+    return ss.jenks(data, numClasses);
+}
+
 // GetColorScale function
 function getColorScale(data, expCat) {
     const values = data.map(d => d[`${expCat}_EAI`]).filter(v => v > 0);
-    const breaks = getJenksBreaks(values, 6);
+    if (values.length === 0) {
+        // No positive values, return a dummy scale
+        return chroma.scale(['#FFFFFF', '#FFFFFF']).domain([0, 1]);
+    }
+    const breaks = getJenksBreaks(values, Math.min(6, values.length));
     const colorScale = chroma.scale(['#FFEDA0', '#FED976', '#FEB24C', '#FD8D3C', '#FC4E2A', '#E31A1C', '#BD0026']).classes(breaks);
     return colorScale;
 }
@@ -319,7 +336,7 @@ function updateMapWithXLSXData(xlsxData, admLevel, expCat) {
             // Add popup with EAI information
             layer.bindPopup(`
                 <strong>${properties[`NAM_${admLevel}`]}</strong><br>
-                EAI: ${eaiValue.toFixed(4)}<br>
+                EAI: ${eaiValue.toFixed(6)}<br>
                 EAI%: ${eaiPercentage.toFixed(4)}%
             `);
         } else {
