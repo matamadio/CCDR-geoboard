@@ -46,6 +46,7 @@ const expCatNames = {
 // Hardcoded country data
 const countriesData = [
     { NAM_0: "Jamaica", ISO_A3: "JAM", ADM_lvl: 1, HZD_list: "FL;CF" },
+    { NAM_0: "Nepal", ISO_A3: "NPL", ADM_lvl: 2, HZD_list: "FL" },
     { NAM_0: "Tunisia", ISO_A3: "TUN", ADM_lvl: 2, HZD_list: "FL;CF" },
     { NAM_0: "Philippines", ISO_A3: "PHL", ADM_lvl: 2, HZD_list: "FL;CF" }
 ];
@@ -350,7 +351,7 @@ function createLegend(colorScale, breaks, expCat) {
                 div.innerHTML +=
                     '<i style="background:' + color + '; width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.7;"></i> ' +
                     (i === breaks.length - 1 ? '0 &ndash; ' : '') +
-                    nextBreak.toFixed(4) + (i === 0 ? '+' : '') + '<br>';
+                    nextBreak.toFixed(2) + (i === 0 ? '+' : '') + '<br>';
             }
         } else {
             div.innerHTML += '<i style="background: #FFFFFF; width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.7;"></i> No data<br>';
