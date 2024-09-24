@@ -36,6 +36,13 @@ const hazardMapping = {
     'CF': 'Coastal floods'
 };
 
+// Exposure categories name mapping
+const expCatNames = {
+    'POP': 'Population',
+    'BU': 'Built-Up',
+    'AGR': 'Cropland'
+};
+
 // Hardcoded country data
 const countriesData = [
     { NAM_0: "Jamaica", ISO_A3: "JAM", ADM_lvl: 1, HZD_list: "FL;CF" },
@@ -378,14 +385,14 @@ function updateMapWithXLSXData(xlsxData, admLevel, expCat) {
 function create_eai_chart(dfData, exp_cat, color, countryName, period) {
     // Defining the title and sub-title
     const mainTitle = `${countryName}, ${period}`;
-    const title = `Flood x ${exp_cat} EAI`;
+    const title = `Flood x ${expCatNames[exp_cat]} EAI`;
     const subtitle = 'Exceedance frequency curve';
 
     // Defining the x- and y-axis data and text
     const x = dfData.map(d => d.Freq);
     const y = dfData.map(d => d[`${exp_cat}_impact`]);
     const xlbl = 'Frequency';
-    const ylbl = `Impact (${exp_cat.toLowerCase()})`;
+    const ylbl = `Impact (${expCatNames[exp_cat]})`;
 
     // Defining if plotting total EAI
     const txtTotal = true;
@@ -393,8 +400,8 @@ function create_eai_chart(dfData, exp_cat, color, countryName, period) {
     const totEAI = d3.sum(dfData.map(d => d[`${exp_cat}_EAI`]));
 
     // Create the plot
-    const margin = {top: 100, right: 30, bottom: 50, left: 60};
-    const width = 400 - margin.left - margin.right;
+    const margin = {top: 100, right: 30, bottom: 50, left: 75};
+    const width = 450 - margin.left - margin.right;
     const height = 300 - margin.top - margin.bottom;
 
     const svg = d3.select("#chart")
