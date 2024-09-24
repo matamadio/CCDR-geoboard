@@ -45,7 +45,7 @@ const countriesData = [
     { NAM_0: "Jamaica", ISO_A3: "JAM", ADM_lvl: 1, HZD_list: "FL;CF" },
     { NAM_0: "Cambodia", ISO_A3: "KHM", ADM_lvl: 2, HZD_list: "FL;CF;LS;TC;HS" },
     { NAM_0: "Lao PDR", ISO_A3: "LAO", ADM_lvl: 2, HZD_list: "FL" },
-    { NAM_0: "Tunisia", ISO_A3: "TUN", ADM_lvl: 2, HZD_list: "FL" },
+    { NAM_0: "Tunisia", ISO_A3: "TUN", ADM_lvl: 2, HZD_list: "FL;CF" },
     { NAM_0: "Philippines", ISO_A3: "PHL", ADM_lvl: 2, HZD_list: "FL;CF" }
 ];
 
