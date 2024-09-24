@@ -33,18 +33,12 @@ let currentADMLayer = null;
 // Hazard code to name mapping
 const hazardMapping = {
     'FL': 'River floods',
-    'CF': 'Coastal floods',
-    'LS': 'Landslides',
-    'TC': 'Tropical cyclones',
-    'HS': 'Heat stress',
-    'DR': 'Drought'
+    'CF': 'Coastal floods'
 };
 
 // Hardcoded country data
 const countriesData = [
     { NAM_0: "Jamaica", ISO_A3: "JAM", ADM_lvl: 1, HZD_list: "FL;CF" },
-    { NAM_0: "Cambodia", ISO_A3: "KHM", ADM_lvl: 2, HZD_list: "FL;CF;LS;TC;HS" },
-    { NAM_0: "Lao PDR", ISO_A3: "LAO", ADM_lvl: 2, HZD_list: "FL" },
     { NAM_0: "Tunisia", ISO_A3: "TUN", ADM_lvl: 2, HZD_list: "FL;CF" },
     { NAM_0: "Philippines", ISO_A3: "PHL", ADM_lvl: 2, HZD_list: "FL;CF" }
 ];
@@ -155,7 +149,7 @@ function populateADMLevelSelector(maxLevel) {
 // Populate hazard selector
 function populateHazardSelector(hazardList) {
     const selector = document.getElementById('hazard-selector');
-    selector.innerHTML = '<option value="">Select a hazard</option>';
+    selector.innerHTML = '<option value="">Select hazard type</option>';
     hazardList.split(';').forEach(hazardCode => {
         const option = document.createElement('option');
         option.value = hazardCode;
@@ -165,10 +159,44 @@ function populateHazardSelector(hazardList) {
     selector.disabled = false;
 }
 
+// Populate period selector
+function populatePeriodSelector() {
+    const selector = document.getElementById('period-selector');
+    selector.innerHTML = '<option value="">Select time period</option>';
+    ['2020', '2030', '2050', '2080'].forEach(period => {
+        const option = document.createElement('option');
+        option.value = period;
+        option.textContent = period;
+        selector.appendChild(option);
+    });
+}
+
+// Populate scenario selector
+function populateScenarioSelector() {
+    const selector = document.getElementById('scenario-selector');
+    selector.innerHTML = '<option value="">Select climate scenario</option>';
+    [
+        { value: 'SSP1_2.6', text: 'SSP1-2.6' },
+        { value: 'SSP2_4.5', text: 'SSP2-4.5' },
+        { value: 'SSP3_7.0', text: 'SSP3-7.0' },
+        { value: 'SSP5_8.5', text: 'SSP5-8.5' }
+    ].forEach(scenario => {
+        const option = document.createElement('option');
+        option.value = scenario.value;
+        option.textContent = scenario.text;
+        selector.appendChild(option);
+    });
+}
+
 // Load XLSX data
-async function loadXLSXData(isoA3, admLevel, hazardCode, expCat) {
+async function loadXLSXData(isoA3, admLevel, hazardCode, expCat, period, scenario) {
     try {
-        const fileName = `data/${isoA3}_ADM${admLevel}_${hazardCode}.xlsx`;
+        let fileName;
+        if (period === '2020') {
+            fileName = `data/${isoA3}_ADM${admLevel}_${hazardCode}_${period}.xlsx`;
+        } else {
+            fileName = `data/${isoA3}_ADM${admLevel}_${hazardCode}_${period}_${scenario}.xlsx`;
+        }
         console.log(`Attempting to load XLSX file: ${fileName}`);
         const response = await fetch(fileName);
         if (!response.ok) {
@@ -213,11 +241,6 @@ async function loadXLSXData(isoA3, admLevel, hazardCode, expCat) {
         console.error('Error loading XLSX data:', error);
         return null;
     }
-}
-
-// Calculate Jenks breaks
-function getJenksBreaks(data, numClasses) {
-    return ss.jenks(data, numClasses);
 }
 
 // Create a legend
@@ -318,8 +341,8 @@ function updateMapWithXLSXData(xlsxData, admLevel, expCat) {
         const matchingData = xlsxData.find(row => row[`NAM_${admLevel}`] === NameCode);
 
         if (matchingData) {
-            const eaiValue = matchingData[`${expCat}_EAI`];
-            const eaiPercentage = matchingData[`${expCat}_EAI%`];
+            const eaiValue = parseFloat(matchingData[`${expCat}_EAI`]) || 0;
+            const eaiPercentage = parseFloat(matchingData[`${expCat}_EAI%`]) || 0;
 
             // Update layer style based on EAI value
             if (eaiValue > 0) {
@@ -346,13 +369,15 @@ function updateMapWithXLSXData(xlsxData, admLevel, expCat) {
                 fillColor: 'transparent',
                 fillOpacity: 0
             });
+            layer.bindPopup(`<strong>${properties[`NAM_${admLevel}`]}</strong><br>No data available`);
         }
     });
 }
 
 // Create EAI chart for selected exp category
-function create_eai_chart(dfData, exp_cat, color) {
+function create_eai_chart(dfData, exp_cat, color, countryName, period) {
     // Defining the title and sub-title
+    const mainTitle = `${countryName}, ${period}`;
     const title = `Flood x ${exp_cat} EAI`;
     const subtitle = 'Exceedance frequency curve';
 
@@ -368,7 +393,7 @@ function create_eai_chart(dfData, exp_cat, color) {
     const totEAI = d3.sum(dfData.map(d => d[`${exp_cat}_EAI`]));
 
     // Create the plot
-    const margin = {top: 50, right: 30, bottom: 50, left: 60};
+    const margin = {top: 100, right: 30, bottom: 50, left: 60};
     const width = 400 - margin.left - margin.right;
     const height = 300 - margin.top - margin.bottom;
 
@@ -421,15 +446,25 @@ function create_eai_chart(dfData, exp_cat, color) {
         .attr("fill-opacity", 0.3)
         .attr("d", area);
 
-    // Add title and subtitle
+    // Add main title (country name and period)
     svg.append("text")
         .attr("x", width / 2)
-        .attr("y", 0 - (margin.top / 2))
+        .attr("y", 0 - (margin.top / 2) - 30)
+        .attr("text-anchor", "middle")
+        .style("font-size", "18px")
+        .style("font-weight", "bold")
+        .text(mainTitle);
+
+    // Add title
+    svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", 0 - (margin.top / 2) - 10)
         .attr("text-anchor", "middle")
         .style("font-size", "16px")
         .style("font-weight", "bold")
         .text(title);
 
+    // Add subtitle
     svg.append("text")
         .attr("x", width / 2)
         .attr("y", 0 - (margin.top / 4))
@@ -459,7 +494,7 @@ function create_eai_chart(dfData, exp_cat, color) {
             .attr("text-anchor", "start")
             .style("font-size", "15px")
             .style("font-weight", "bold")
-            .text(`EAI = ${totEAI.toFixed(0)}`);
+            .text(`EAI = ${totEAI.toFixed(2)}`);
     }
 
     // Add RP labels
@@ -482,7 +517,10 @@ document.getElementById('country-selector').addEventListener('change', async (ev
         const countryData = countriesData.find(d => d.ISO_A3 === country);
         console.log('Country data:', countryData);
         populateADMLevelSelector(countryData.ADM_lvl);
+        document.getElementById('adm-level-selector').disabled = false;
         document.getElementById('hazard-selector').disabled = true;
+        document.getElementById('period-selector').disabled = true;
+        document.getElementById('scenario-selector').disabled = true;
         document.getElementById('exposure-selector').disabled = true;
 
         // Fetch and plot country boundaries (ADM level 0)
@@ -503,6 +541,10 @@ document.getElementById('adm-level-selector').addEventListener('change', async (
     if (country && admLevel) {
         const countryData = countriesData.find(d => d.ISO_A3 === country);
         populateHazardSelector(countryData.HZD_list);
+        document.getElementById('hazard-selector').disabled = false;
+        document.getElementById('period-selector').disabled = true;
+        document.getElementById('scenario-selector').disabled = true;
+        document.getElementById('exposure-selector').disabled = true;
         const geojsonData = await fetchADMData(country, admLevel);
         updateMap(geojsonData, admLevel);
     }
@@ -511,20 +553,49 @@ document.getElementById('adm-level-selector').addEventListener('change', async (
 document.getElementById('hazard-selector').addEventListener('change', (event) => {
     const hazard = event.target.value;
     if (hazard) {
+        populatePeriodSelector(); // Add this line to populate the period selector
+        document.getElementById('period-selector').disabled = false;
+        document.getElementById('scenario-selector').disabled = true;
+        document.getElementById('exposure-selector').disabled = true;
+    }
+});
+
+document.getElementById('period-selector').addEventListener('change', (event) => {
+    const period = event.target.value;
+    if (period) {
+        if (period === '2020') {
+            document.getElementById('scenario-selector').disabled = true;
+            document.getElementById('exposure-selector').disabled = false;
+        } else {
+            document.getElementById('scenario-selector').disabled = false;
+            document.getElementById('exposure-selector').disabled = true;
+            populateScenarioSelector();
+        }
+    }
+});
+
+document.getElementById('scenario-selector').addEventListener('change', (event) => {
+    const scenario = event.target.value;
+    if (scenario) {
         document.getElementById('exposure-selector').disabled = false;
     }
 });
 
+// Exposure selector event listener
 document.getElementById('exposure-selector').addEventListener('change', async (event) => {
     const expCat = event.target.value;
-    const country = document.getElementById('country-selector').value;
+    const countrySelector = document.getElementById('country-selector');
+    const country = countrySelector.value;
+    const countryName = countrySelector.options[countrySelector.selectedIndex].text;
     const admLevel = document.getElementById('adm-level-selector').value;
     const hazard = document.getElementById('hazard-selector').value;
+    const period = document.getElementById('period-selector').value;
+    const scenario = document.getElementById('scenario-selector').value;
 
-    if (country && admLevel && hazard && expCat) {
+    if (country && admLevel && hazard && expCat && period && (period === '2020' || scenario)) {
         try {
-            console.log(`Loading XLSX data for ${country}, ADM${admLevel}, ${hazard}, ${expCat}`);
-            const data = await loadXLSXData(country, admLevel, hazard, expCat);
+            console.log(`Loading XLSX data for ${country}, ADM${admLevel}, ${hazard}, ${expCat}, ${period}, ${scenario}`);
+            const data = await loadXLSXData(country, admLevel, hazard, expCat, period, scenario);
             console.log('XLSX data loaded:', data);
             if (data) {
                 updateMapWithXLSXData(data.mainData, admLevel, expCat);
@@ -534,7 +605,7 @@ document.getElementById('exposure-selector').addEventListener('change', async (e
                 
                 // Create new chart
                 const colorMap = { 'POP': 'blue', 'BU': 'orange', 'AGR': 'green' };
-                create_eai_chart(data.summaryData, expCat, colorMap[expCat]);
+                create_eai_chart(data.summaryData, expCat, colorMap[expCat], countryName, period);
             } else {
                 console.error('No XLSX data loaded');
             }
