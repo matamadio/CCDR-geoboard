@@ -53,6 +53,16 @@ const countriesData = [
 // Populate country selector
 function populateCountrySelector() {
     const selector = document.getElementById('country-selector');
+    
+    // Add placeholder option
+    const placeholderOption = document.createElement('option');
+    placeholderOption.value = "";
+    placeholderOption.textContent = "Select a country";
+    placeholderOption.selected = true;
+    placeholderOption.disabled = true;
+    selector.appendChild(placeholderOption);
+    
+    // Add country options
     countriesData.sort((a, b) => a.NAM_0.localeCompare(b.NAM_0)).forEach(country => {
         const option = document.createElement('option');
         option.value = country.ISO_A3;
@@ -143,7 +153,14 @@ function updateMap(geojsonData, admLevel) {
 // Populate ADM level selector
 function populateADMLevelSelector(maxLevel) {
     const selector = document.getElementById('adm-level-selector');
-    selector.innerHTML = '<option value="">Select ADM level</option>';
+    selector.innerHTML = ''; // Clear existing options
+    // Add placeholder option
+    const placeholderOption = document.createElement('option');
+    placeholderOption.value = "";
+    placeholderOption.textContent = "Select ADM level";
+    placeholderOption.selected = true;
+    placeholderOption.disabled = true;
+    selector.appendChild(placeholderOption);
     for (let i = 1; i <= maxLevel; i++) {
         const option = document.createElement('option');
         option.value = i;
@@ -156,7 +173,14 @@ function populateADMLevelSelector(maxLevel) {
 // Populate hazard selector
 function populateHazardSelector(hazardList) {
     const selector = document.getElementById('hazard-selector');
-    selector.innerHTML = '<option value="">Select hazard type</option>';
+    selector.innerHTML = ''; // Clear existing options  
+    // Add placeholder option
+    const placeholderOption = document.createElement('option');
+    placeholderOption.value = "";
+    placeholderOption.textContent = "Select hazard type";
+    placeholderOption.selected = true;
+    placeholderOption.disabled = true;
+    selector.appendChild(placeholderOption);
     hazardList.split(';').forEach(hazardCode => {
         const option = document.createElement('option');
         option.value = hazardCode;
@@ -169,7 +193,14 @@ function populateHazardSelector(hazardList) {
 // Populate period selector
 function populatePeriodSelector() {
     const selector = document.getElementById('period-selector');
-    selector.innerHTML = '<option value="">Select time period</option>';
+    selector.innerHTML = ''; // Clear existing options
+    // Add placeholder option
+    const placeholderOption = document.createElement('option');
+    placeholderOption.value = "";
+    placeholderOption.textContent = "Select time period";
+    placeholderOption.selected = true;
+    placeholderOption.disabled = true;
+    selector.appendChild(placeholderOption); 
     ['2020', '2030', '2050', '2080'].forEach(period => {
         const option = document.createElement('option');
         option.value = period;
@@ -181,7 +212,14 @@ function populatePeriodSelector() {
 // Populate scenario selector
 function populateScenarioSelector() {
     const selector = document.getElementById('scenario-selector');
-    selector.innerHTML = '<option value="">Select climate scenario</option>';
+    selector.innerHTML = ''; // Clear existing options
+    // Add placeholder option
+    const placeholderOption = document.createElement('option');
+    placeholderOption.value = "";
+    placeholderOption.textContent = "Select climate scenario";
+    placeholderOption.selected = true;
+    placeholderOption.disabled = true;
+    selector.appendChild(placeholderOption);
     [
         { value: 'SSP1_2.6', text: 'SSP1-2.6' },
         { value: 'SSP2_4.5', text: 'SSP2-4.5' },
@@ -193,6 +231,30 @@ function populateScenarioSelector() {
         option.textContent = scenario.text;
         selector.appendChild(option);
     });
+}
+
+// Populate exposure selector
+function populateExposureSelector() {
+    const selector = document.getElementById('exposure-selector');
+    selector.innerHTML = ''; // Clear existing options
+    
+    // Add placeholder option
+    const placeholderOption = document.createElement('option');
+    placeholderOption.value = "";
+    placeholderOption.textContent = "Select exposure category";
+    placeholderOption.selected = true;
+    placeholderOption.disabled = true;
+    selector.appendChild(placeholderOption);
+    
+    // Add exposure options
+    Object.entries(expCatNames).forEach(([value, text]) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = text;
+        selector.appendChild(option);
+    });
+    
+    selector.disabled = true; // Initially disabled
 }
 
 // Load XLSX data
@@ -529,6 +591,7 @@ document.getElementById('country-selector').addEventListener('change', async (ev
         document.getElementById('period-selector').disabled = true;
         document.getElementById('scenario-selector').disabled = true;
         document.getElementById('exposure-selector').disabled = true;
+        resetExposureSelector();
 
         // Fetch and plot country boundaries (ADM level 0)
         console.log('Fetching country boundaries');
@@ -552,6 +615,7 @@ document.getElementById('adm-level-selector').addEventListener('change', async (
         document.getElementById('period-selector').disabled = true;
         document.getElementById('scenario-selector').disabled = true;
         document.getElementById('exposure-selector').disabled = true;
+        resetExposureSelector();
         const geojsonData = await fetchADMData(country, admLevel);
         updateMap(geojsonData, admLevel);
     }
@@ -564,6 +628,7 @@ document.getElementById('hazard-selector').addEventListener('change', (event) =>
         document.getElementById('period-selector').disabled = false;
         document.getElementById('scenario-selector').disabled = true;
         document.getElementById('exposure-selector').disabled = true;
+        resetExposureSelector();
     }
 });
 
@@ -574,9 +639,10 @@ document.getElementById('period-selector').addEventListener('change', (event) =>
             document.getElementById('scenario-selector').disabled = true;
             document.getElementById('exposure-selector').disabled = false;
         } else {
+            populateScenarioSelector();
             document.getElementById('scenario-selector').disabled = false;
             document.getElementById('exposure-selector').disabled = true;
-            populateScenarioSelector();
+            resetExposureSelector();
         }
     }
 });
@@ -586,6 +652,7 @@ document.getElementById('scenario-selector').addEventListener('change', (event) 
     if (scenario) {
         document.getElementById('exposure-selector').disabled = false;
     }
+    resetExposureSelector();
 });
 
 // Exposure selector event listener
@@ -622,5 +689,19 @@ document.getElementById('exposure-selector').addEventListener('change', async (e
     }
 });
 
-// Initialize the dashboard
-populateCountrySelector();
+// Helper function to reset exposure selector
+function resetExposureSelector() {
+    const exposureSelector = document.getElementById('exposure-selector');
+    exposureSelector.value = "";
+    exposureSelector.disabled = true;
+}
+
+// Call this function to initialize the exposure selector
+function initializeDashboard() {
+    populateCountrySelector();
+    populateExposureSelector();
+    // Any other initialization code...
+}
+
+// Call the initialization function when the page loads
+document.addEventListener('DOMContentLoaded', initializeDashboard);
