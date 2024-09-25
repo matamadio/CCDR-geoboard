@@ -203,7 +203,7 @@ function populatePeriodSelector() {
     placeholderOption.selected = true;
     placeholderOption.disabled = true;
     selector.appendChild(placeholderOption); 
-    ['2020', '2030', '2050', '2080'].forEach(period => {
+    ['2020', '2050', '2080'].forEach(period => {
         const option = document.createElement('option');
         option.value = period;
         option.textContent = period;
