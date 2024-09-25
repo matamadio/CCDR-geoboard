@@ -45,11 +45,11 @@ const expCatNames = {
 
 // Hardcoded country data
 const countriesData = [
-    { NAM_0: "Bangladesh", ISO_A3: "BGD", ADM_lvl: 2, HZD_list: "FL;CF" },
-    { NAM_0: "Jamaica", ISO_A3: "JAM", ADM_lvl: 1, HZD_list: "FL;CF" },
-    { NAM_0: "Nepal", ISO_A3: "NPL", ADM_lvl: 2, HZD_list: "FL" },
-    { NAM_0: "Tunisia", ISO_A3: "TUN", ADM_lvl: 2, HZD_list: "FL;CF" },
-    { NAM_0: "Philippines", ISO_A3: "PHL", ADM_lvl: 2, HZD_list: "FL;CF" }
+    { NAM_0: "Bangladesh", ISO_A3: "BGD", ADM_lvl: 2, HZD_list: "FL;CF", Period: 2020 },
+    { NAM_0: "Jamaica", ISO_A3: "JAM", ADM_lvl: 1, HZD_list: "FL;CF", Period: "2020;2050;2080", Scenario: "SSP1-2.6;SSP2-4.5;SSP3-7.0;SSP5-8.5" },
+    { NAM_0: "Nepal", ISO_A3: "NPL", ADM_lvl: 2, HZD_list: "FL", Period: 2020 },
+    { NAM_0: "Tunisia", ISO_A3: "TUN", ADM_lvl: 2, HZD_list: "FL;CF", Period: 2020 },
+    { NAM_0: "Philippines", ISO_A3: "PHL", ADM_lvl: 2, HZD_list: "FL;CF", Period: 2020 }
 ];
 
 // Populate country selector
@@ -193,7 +193,7 @@ function populateHazardSelector(hazardList) {
 }
 
 // Populate period selector
-function populatePeriodSelector() {
+function populatePeriodSelector(periods) {
     const selector = document.getElementById('period-selector');
     selector.innerHTML = ''; // Clear existing options
     // Add placeholder option
@@ -203,7 +203,8 @@ function populatePeriodSelector() {
     placeholderOption.selected = true;
     placeholderOption.disabled = true;
     selector.appendChild(placeholderOption); 
-    ['2020', '2050', '2080'].forEach(period => {
+    
+    periods.split(';').forEach(period => {
         const option = document.createElement('option');
         option.value = period;
         option.textContent = period;
@@ -212,7 +213,7 @@ function populatePeriodSelector() {
 }
 
 // Populate scenario selector
-function populateScenarioSelector() {
+function populateScenarioSelector(scenarios) {
     const selector = document.getElementById('scenario-selector');
     selector.innerHTML = ''; // Clear existing options
     // Add placeholder option
@@ -222,15 +223,11 @@ function populateScenarioSelector() {
     placeholderOption.selected = true;
     placeholderOption.disabled = true;
     selector.appendChild(placeholderOption);
-    [
-        { value: 'SSP1_2.6', text: 'SSP1-2.6' },
-        { value: 'SSP2_4.5', text: 'SSP2-4.5' },
-        { value: 'SSP3_7.0', text: 'SSP3-7.0' },
-        { value: 'SSP5_8.5', text: 'SSP5-8.5' }
-    ].forEach(scenario => {
+    
+    scenarios.split(';').forEach(scenario => {
         const option = document.createElement('option');
-        option.value = scenario.value;
-        option.textContent = scenario.text;
+        option.value = scenario
+        option.textContent = scenario;
         selector.appendChild(option);
     });
 }
@@ -585,15 +582,7 @@ document.getElementById('country-selector').addEventListener('change', async (ev
     const country = event.target.value;
     console.log('Country selected:', country);
     if (country) {
-        const countryData = countriesData.find(d => d.ISO_A3 === country);
-        console.log('Country data:', countryData);
-        populateADMLevelSelector(countryData.ADM_lvl);
-        document.getElementById('adm-level-selector').disabled = false;
-        document.getElementById('hazard-selector').disabled = true;
-        document.getElementById('period-selector').disabled = true;
-        document.getElementById('scenario-selector').disabled = true;
-        document.getElementById('exposure-selector').disabled = true;
-        resetExposureSelector();
+        updateSelectorsForCountry(country);
 
         // Fetch and plot country boundaries (ADM level 0)
         console.log('Fetching country boundaries');
@@ -625,8 +614,10 @@ document.getElementById('adm-level-selector').addEventListener('change', async (
 
 document.getElementById('hazard-selector').addEventListener('change', (event) => {
     const hazard = event.target.value;
-    if (hazard) {
-        populatePeriodSelector(); // Add this line to populate the period selector
+    const country = document.getElementById('country-selector').value;
+    if (hazard && country) {
+        const countryData = countriesData.find(d => d.ISO_A3 === country);
+        populatePeriodSelector(countryData.Period.toString()); // Convert to string in case it's a number
         document.getElementById('period-selector').disabled = false;
         document.getElementById('scenario-selector').disabled = true;
         document.getElementById('exposure-selector').disabled = true;
@@ -636,15 +627,16 @@ document.getElementById('hazard-selector').addEventListener('change', (event) =>
 
 document.getElementById('period-selector').addEventListener('change', (event) => {
     const period = event.target.value;
-    if (period) {
-        if (period === '2020') {
+    const country = document.getElementById('country-selector').value;
+    if (period && country) {
+        const countryData = countriesData.find(d => d.ISO_A3 === country);
+        if (period === '2020' || !countryData.Scenario) {
             document.getElementById('scenario-selector').disabled = true;
             document.getElementById('exposure-selector').disabled = false;
         } else {
-            populateScenarioSelector();
+            populateScenarioSelector(countryData.Scenario);
             document.getElementById('scenario-selector').disabled = false;
             document.getElementById('exposure-selector').disabled = true;
-            resetExposureSelector();
         }
     }
 });
@@ -654,8 +646,14 @@ document.getElementById('scenario-selector').addEventListener('change', (event) 
     if (scenario) {
         document.getElementById('exposure-selector').disabled = false;
     }
-    resetExposureSelector();
 });
+
+// Helper function to reset exposure selector
+function resetExposureSelector() {
+    const exposureSelector = document.getElementById('exposure-selector');
+    exposureSelector.value = "";
+    exposureSelector.disabled = true;
+}
 
 // Exposure selector event listener
 document.getElementById('exposure-selector').addEventListener('change', async (event) => {
@@ -666,11 +664,12 @@ document.getElementById('exposure-selector').addEventListener('change', async (e
     const admLevel = document.getElementById('adm-level-selector').value;
     const hazard = document.getElementById('hazard-selector').value;
     const period = document.getElementById('period-selector').value;
-    const scenario = document.getElementById('scenario-selector').value;
+    const scenarioSelector = document.getElementById('scenario-selector');
+    const scenario = scenarioSelector.disabled ? null : scenarioSelector.value;
 
-    if (country && admLevel && hazard && expCat && period && (period === '2020' || scenario)) {
+    if (country && admLevel && hazard && expCat && period) {
         try {
-            console.log(`Loading XLSX data for ${country}, ADM${admLevel}, ${hazard}, ${expCat}, ${period}, ${scenario}`);
+            console.log(`Loading XLSX data for ${country}, ADM${admLevel}, ${hazard}, ${expCat}, ${period}, ${scenario || 'N/A'}`);
             const data = await loadXLSXData(country, admLevel, hazard, expCat, period, scenario);
             console.log('XLSX data loaded:', data);
             if (data) {
@@ -691,11 +690,17 @@ document.getElementById('exposure-selector').addEventListener('change', async (e
     }
 });
 
-// Helper function to reset exposure selector
-function resetExposureSelector() {
-    const exposureSelector = document.getElementById('exposure-selector');
-    exposureSelector.value = "";
-    exposureSelector.disabled = true;
+// Function to update selectors based on country selection
+function updateSelectorsForCountry(country) {
+    const countryData = countriesData.find(d => d.ISO_A3 === country);
+    if (countryData) {
+        populateADMLevelSelector(countryData.ADM_lvl);
+        document.getElementById('adm-level-selector').disabled = false;
+        document.getElementById('hazard-selector').disabled = true;
+        document.getElementById('period-selector').disabled = true;
+        document.getElementById('scenario-selector').disabled = true;
+        resetExposureSelector();
+    }
 }
 
 // Call this function to initialize the exposure selector
