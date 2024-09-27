@@ -45,7 +45,7 @@ const expCatNames = {
 
 // Hardcoded country data
 const countriesData = [
-    { NAM_0: "Bangladesh", ISO_A3: "BGD", ADM_lvl: 2, HZD_list: "FL;CF", Period: 2020 },
+    { NAM_0: "Bangladesh", ISO_A3: "BGD", ADM_lvl: 2, HZD_list: "FL;CF", Period: "2020;2050", Scenario: "SSP3-7.0" },
     { NAM_0: "Jamaica", ISO_A3: "JAM", ADM_lvl: 1, HZD_list: "FL;CF", Period: "2020;2050;2080", Scenario: "SSP1-2.6;SSP2-4.5;SSP3-7.0;SSP5-8.5" },
     { NAM_0: "Nepal", ISO_A3: "NPL", ADM_lvl: 2, HZD_list: "FL", Period: 2020 },
     { NAM_0: "Tunisia", ISO_A3: "TUN", ADM_lvl: 2, HZD_list: "FL;CF", Period: 2020 },
